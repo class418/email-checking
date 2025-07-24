@@ -99,8 +99,9 @@
     const form = document.getElementById("emailForm");
     const emailInput = document.getElementById("emailInput");
     const result = document.getElementById("result");
+    const endpoint = "https://script.google.com/macros/s/AKfycbzsUH__MbnBfaa4KAnEGa60gRJFArmdcRi4YTflWRK5L_8fOdNlu0OwM9-3bKQUfrWS/exec";
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const email = emailInput.value.trim();
@@ -112,13 +113,28 @@
         return;
       }
 
-      // 認証成功をシミュレーション
-      result.textContent = "認証が完了しました。リダイレクトしています...";
-      result.className = "success";
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email }),
+        });
+        const data = await res.json();
 
-      setTimeout(() => {
-        location.replace("https://www.16personalities.com/ja/性格診断テスト");
-      }, 1500);
+        if (data.result === "success") {
+          result.textContent = "認証が完了しました。リダイレクトしています...";
+          result.className = "success";
+          setTimeout(() => {
+            location.replace("https://www.16personalities.com/ja/性格診断テスト");
+          }, 1500);
+        } else {
+          result.textContent = "送信に失敗しました。もう一度試してください。";
+          result.className = "error";
+        }
+      } catch (error) {
+        result.textContent = "通信エラーが発生しました。";
+        result.className = "error";
+      }
     });
   </script>
 </body>
