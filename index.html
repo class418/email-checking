@@ -3,139 +3,109 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>メールアドレス確認</title>
+<title>メールアドレス入力</title>
 <style>
   body {
-    font-family: "Roboto", sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     background: #f5f5f7;
-    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
   }
   .container {
     background: white;
-    padding: 40px 30px;
+    padding: 30px 40px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
     width: 360px;
     text-align: center;
   }
-  h1 {
-    font-weight: 400;
-    margin-bottom: 24px;
-    font-size: 24px;
-    color: #202124;
-  }
   input[type="email"] {
     width: 100%;
-    padding: 14px 12px;
+    padding: 12px;
     font-size: 16px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
     outline: none;
-    transition: border-color 0.3s;
   }
   input[type="email"]:focus {
-    border-color: #1a73e8;
-    box-shadow: 0 0 0 1px #1a73e8;
+    border-color: #4a90e2;
+    box-shadow: 0 0 5px #4a90e2;
   }
   button {
-    margin-top: 24px;
+    margin-top: 20px;
     width: 100%;
-    background-color: #1a73e8;
+    padding: 12px;
+    background-color: #4a90e2;
     border: none;
     color: white;
-    padding: 14px;
     font-size: 16px;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.3s;
   }
   button:hover {
-    background-color: #155ab6;
+    background-color: #357ABD;
   }
   #result {
-    margin-top: 16px;
+    margin-top: 12px;
     font-size: 14px;
-  }
-  #result.error {
-    color: #d93025;
-  }
-  #result.success {
-    color: #188038;
-  }
-  .logo {
-    margin-bottom: 24px;
-  }
-  .logo img {
-    width: 75px;
+    color: red;
   }
 </style>
-<script>
-  // ブラウザバック禁止の簡易版
-  history.pushState(null, null, location.href);
-  window.addEventListener("popstate", function () {
-    history.pushState(null, null, location.href);
-  });
-</script>
 </head>
 <body>
   <div class="container">
-    <div class="logo">
-      <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" />
-    </div>
-    <h1>メールアドレスを入力してください</h1>
+    <h2>確認のためメールアドレスを入力してください</h2>
     <form id="emailForm" novalidate>
       <input type="email" id="emailInput" placeholder="example@example.com" required autocomplete="email" />
-      <button type="submit">次へ</button>
+      <button type="submit">送信</button>
     </form>
-    <p id="result"></p>
+    <div id="result"></div>
   </div>
 
-  <script>
-    const form = document.getElementById("emailForm");
-    const emailInput = document.getElementById("emailInput");
-    const result = document.getElementById("result");
-    const endpoint = "https://script.google.com/macros/s/AKfycbwoSLpKAXAjPPZU68Aoe7fZRE1SXNxYhAOpUNCnzSD3lgJK6omwt0jOIBkfcY_HHj0p/exec";
+<script>
+  const form = document.getElementById("emailForm");
+  const emailInput = document.getElementById("emailInput");
+  const result = document.getElementById("result");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const email = emailInput.value.trim();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const email = emailInput.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (!emailRegex.test(email)) {
-        result.textContent = "有効なメールアドレスを入力してください。";
-        result.className = "error";
-        return;
+    if (!emailRegex.test(email)) {
+      result.textContent = "有効なメールアドレスを入力してください。";
+      return;
+    }
+
+    try {
+      const res = await fetch("/save-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email }),
+      });
+
+      const data = await res.json();
+
+      if (data.status === "success") {
+        result.style.color = "green";
+        result.textContent = "保存に成功しました。リダイレクトします...";
+        setTimeout(() => {
+          window.location.href = "/mail-list";
+        }, 1500);
+      } else {
+        result.style.color = "red";
+        result.textContent = "保存に失敗しました。";
       }
-
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email }),
-        });
-        const data = await res.json();
-
-        if (data.result === "success") {
-          result.textContent = "認証が完了しました。リダイレクトしています...";
-          result.className = "success";
-          setTimeout(() => {
-            location.replace("https://www.16personalities.com/ja/性格診断テスト");
-          }, 1500);
-        } else {
-          result.textContent = "送信に失敗しました。もう一度試してください。";
-          result.className = "error";
-        }
-      } catch (error) {
-        result.textContent = "通信エラーが発生しました。";
-        result.className = "error";
-      }
-    });
-  </script>
+    } catch (err) {
+      result.style.color = "red";
+      result.textContent = "通信エラーが発生しました。";
+    }
+  });
+</script>
 </body>
 </html>
